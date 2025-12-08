@@ -1,6 +1,6 @@
 // src/App.jsx
 import {
-  BrowserRouter as Router,
+  HashRouter as Router,   // ⬅️ yaha change
   Routes,
   Route,
   Navigate,
@@ -120,7 +120,7 @@ function App() {
               }
             />
 
-            {/* ✅ NEW: CHECKOUT */}
+            {/* CHECKOUT */}
             <Route
               path="/checkout"
               element={
