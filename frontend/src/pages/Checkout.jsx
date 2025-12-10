@@ -61,7 +61,6 @@ const addressSchema = z
   .min(5, "Address must be at least 5 characters")
   .max(200, "Address must be at most 200 characters");
 
-// 🔹 full shipping schema
 const shippingSchema = z.object({
   fullName: fullNameSchema,
   phone: phoneSchema,
@@ -75,7 +74,6 @@ export default function Checkout() {
   const location = useLocation();
   const dispatch = useDispatch();
 
-  // Cart data from navigate state (Cart / Products / ProductDetail se)
   const cartItems = location.state?.items || [];
 
   const [shipping, setShipping] = useState({
@@ -95,7 +93,6 @@ export default function Checkout() {
     const { name, value } = e.target;
     setShipping((prev) => ({ ...prev, [name]: value }));
 
-    // usi field ka error hatao
     const key = `shipping.${name}`;
     setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
   };
@@ -107,14 +104,14 @@ export default function Checkout() {
     setMessage("");
     setFieldErrors({});
 
-    // 🔹 STEP 1: FRONTEND ZOD VALIDATION
+    // Frontend validation
     try {
       shippingSchema.parse(shipping);
     } catch (err) {
       if (err instanceof ZodError) {
         const newErrors = {};
         err.issues.forEach((issue) => {
-          const field = issue.path[0]; // "fullName" / "phone" / ...
+          const field = issue.path[0];
           newErrors[`shipping.${field}`] = issue.message;
         });
         setFieldErrors(newErrors);
@@ -124,18 +121,17 @@ export default function Checkout() {
       }
     }
 
-    // Agar cart khali hai to error
     if (cartItems.length === 0) {
       setError("Your cart is empty. Please add items before checkout.");
       setPlacing(false);
       return;
     }
 
-    // 🔹 STEP 2: Backend ko call (Zod pass ho gaya)
+    // Backend call
     try {
       const body = {
         items: cartItems.map((i) => ({
-          productId: i._id || i.id, // both cases support
+          productId: i._id || i.id,
           quantity: i.quantity || 1,
         })),
         shipping,
@@ -145,7 +141,6 @@ export default function Checkout() {
 
       setMessage(res.data.message || "Order placed successfully");
 
-      // ✅ CART CLEAR + REDIRECT TO HOME
       dispatch(clearCart());
       localStorage.removeItem("cart");
       navigate("/", { replace: true });
@@ -156,7 +151,6 @@ export default function Checkout() {
 
       setError(msg);
 
-      // Agar backend ne bhi Zod errors bheje to use bhi dikhayenge
       const backendErrors = err.response?.data?.errors || {};
       setFieldErrors(backendErrors);
     } finally {
@@ -165,31 +159,37 @@ export default function Checkout() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gray-50 px-3 sm:px-4 md:px-6 py-4 sm:py-6 lg:py-8">
-      <div className="max-w-2xl mx-auto bg-white shadow-md sm:shadow-lg rounded-2xl p-4 sm:p-6 md:p-7">
-        {/* Global alerts */}
+    <div className="
+      min-h-screen 
+      flex items-center justify-center 
+      bg-gray-50 
+      px-3 sm:px-4 md:px-6 py-6
+    ">
+      <div className="w-full max-w-2xl bg-white shadow-lg rounded-2xl p-5 sm:p-7">
+
+        {/* Alerts */}
         {error && (
-          <div className="mb-4 rounded-md bg-red-100 text-red-700 px-4 py-3 text-xs sm:text-sm">
+          <div className="mb-4 rounded-md bg-red-100 text-red-700 px-4 py-3 text-sm">
             {error}
           </div>
         )}
+
         {message && (
-          <div className="mb-4 rounded-md bg-green-100 text-green-700 px-4 py-3 text-xs sm:text-sm">
+          <div className="mb-4 rounded-md bg-green-100 text-green-700 px-4 py-3 text-sm">
             {message}
           </div>
         )}
 
-        <h2 className="text-xl sm:text-2xl font-bold mb-1">Checkout</h2>
-        <p className="text-xs sm:text-sm text-gray-600 mb-4">
+        <h2 className="text-2xl font-bold mb-1">Checkout</h2>
+        <p className="text-sm text-gray-600 mb-4">
           Enter your shipping details to place the order.
         </p>
 
-        {/* SHIPPING FORM */}
-        <h3 className="text-base sm:text-lg font-semibold mb-2">
-          Shipping Details
-        </h3>
+        {/* FORM */}
+        <h3 className="text-lg font-semibold mb-2">Shipping Details</h3>
 
-        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+
           {/* Name + Phone */}
           <div className="grid md:grid-cols-2 gap-3">
             <div>
@@ -197,15 +197,14 @@ export default function Checkout() {
                 name="fullName"
                 type="text"
                 placeholder="Full Name"
-                className={`w-full border rounded-md px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                className={`w-full border rounded-md px-3 py-2 text-sm ${
                   fieldErrors["shipping.fullName"] ? "border-red-500" : ""
                 }`}
                 value={shipping.fullName}
                 onChange={handleChange}
-                required
               />
               {fieldErrors["shipping.fullName"] && (
-                <p className="text-[11px] text-red-600 mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   {fieldErrors["shipping.fullName"]}
                 </p>
               )}
@@ -216,15 +215,14 @@ export default function Checkout() {
                 name="phone"
                 type="text"
                 placeholder="Phone"
-                className={`w-full border rounded-md px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                className={`w-full border rounded-md px-3 py-2 text-sm ${
                   fieldErrors["shipping.phone"] ? "border-red-500" : ""
                 }`}
                 value={shipping.phone}
                 onChange={handleChange}
-                required
               />
               {fieldErrors["shipping.phone"] && (
-                <p className="text-[11px] text-red-600 mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   {fieldErrors["shipping.phone"]}
                 </p>
               )}
@@ -238,15 +236,14 @@ export default function Checkout() {
                 name="city"
                 type="text"
                 placeholder="City"
-                className={`w-full border rounded-md px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                className={`w-full border rounded-md px-3 py-2 text-sm ${
                   fieldErrors["shipping.city"] ? "border-red-500" : ""
                 }`}
                 value={shipping.city}
                 onChange={handleChange}
-                required
               />
               {fieldErrors["shipping.city"] && (
-                <p className="text-[11px] text-red-600 mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   {fieldErrors["shipping.city"]}
                 </p>
               )}
@@ -257,15 +254,14 @@ export default function Checkout() {
                 name="pincode"
                 type="text"
                 placeholder="Pincode"
-                className={`w-full border rounded-md px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                className={`w-full border rounded-md px-3 py-2 text-sm ${
                   fieldErrors["shipping.pincode"] ? "border-red-500" : ""
                 }`}
                 value={shipping.pincode}
                 onChange={handleChange}
-                required
               />
               {fieldErrors["shipping.pincode"] && (
-                <p className="text-[11px] text-red-600 mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   {fieldErrors["shipping.pincode"]}
                 </p>
               )}
@@ -278,33 +274,33 @@ export default function Checkout() {
               name="addressLine"
               rows={3}
               placeholder="Full Address"
-              className={`w-full border rounded-md px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+              className={`w-full border rounded-md px-3 py-2 text-sm ${
                 fieldErrors["shipping.addressLine"] ? "border-red-500" : ""
               }`}
               value={shipping.addressLine}
               onChange={handleChange}
-              required
             />
             {fieldErrors["shipping.addressLine"] && (
-              <p className="text-[11px] text-red-600 mt-1">
+              <p className="text-xs text-red-600 mt-1">
                 {fieldErrors["shipping.addressLine"]}
               </p>
             )}
           </div>
 
           {/* Buttons */}
-          <div className="flex flex-col md:flex-row gap-3 mt-3 sm:mt-4">
+          <div className="flex flex-col md:flex-row gap-3">
             <button
               type="submit"
               disabled={placing}
-              className="flex-1 bg-indigo-600 text-white px-4 py-2.5 rounded-md text-sm sm:text-[15px] font-medium hover:bg-indigo-700 disabled:opacity-60 active:scale-[0.98] transition"
+              className="flex-1 bg-indigo-600 text-white px-4 py-2.5 rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-60"
             >
               {placing ? "Placing..." : "Place Order"}
             </button>
+
             <button
               type="button"
               onClick={() => navigate("/cart")}
-              className="flex-1 border rounded-md px-4 py-2.5 text-sm sm:text-[15px] font-medium text-gray-700 hover:bg-gray-100 active:scale-[0.98] transition"
+              className="flex-1 border rounded-md px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100"
             >
               Back to Cart
             </button>
