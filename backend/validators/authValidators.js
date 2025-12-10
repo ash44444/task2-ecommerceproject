@@ -12,24 +12,19 @@ const trimmedString = z
   .trim();
 
 /**
- * NAME (user full name, ecommerce-style)
+ * NAME (user full name)
  * - 2–80 characters
- * - Allows:
- *   - Letters (A–Z, a–z, unicode)
- *   - Spaces
- *   - Dot .  (Dr. Strange)
- *   - Apostrophe '  (O'Connor)
- *   - Hyphen -  (Jean-Pierre)
- *   - Comma ,  (ACME, Inc.)
- * - ❌ Pure numbers NOT allowed (e.g. "51545645644" invalid)
- * - ✅ Must contain at least one letter
+ * - ✅ Only letters + spaces
+ * - ❌ No digits
+ * - ❌ No special chars: ! @ # * & ^ ( ) % etc.
+ * - Must contain at least one letter
  */
 const nameSchema = trimmedString
   .min(2, "Name must be at least 2 characters")
   .max(80, "Name must be at most 80 characters")
   .regex(
-    /^[A-Za-zÀ-ÖØ-öø-ÿ .,'\-]+$/,
-    "Name can only contain letters, spaces, dots, commas, apostrophes and hyphens"
+    /^[A-Za-zÀ-ÖØ-öø-ÿ ]+$/,
+    "Name can only contain letters and spaces"
   )
   .refine((v) => /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(v), {
     message: "Name must contain at least one letter",
