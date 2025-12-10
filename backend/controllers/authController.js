@@ -4,6 +4,23 @@ const logger = require("../utils/logger");
 const { registerSchema, loginSchema } = require("../validators/authValidators");
 const { ZodError } = require("zod");
 
+// Helper: convert Zod issues -> { field: "msg, msg2" }
+function zodIssuesToFieldErrors(issues = []) {
+  const fieldErrors = {};
+
+  for (const issue of issues) {
+    const field = issue.path && issue.path.length > 0 ? issue.path[0] : "_global";
+
+    if (!fieldErrors[field]) {
+      fieldErrors[field] = issue.message;
+    } else {
+      fieldErrors[field] += ", " + issue.message;
+    }
+  }
+
+  return fieldErrors;
+}
+
 // REGISTER (SIGNUP)
 exports.register = async (req, res) => {
   try {
@@ -19,10 +36,11 @@ exports.register = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "User already exists with this email",
+        errors: { email: "User already exists with this email" },
       });
     }
 
-    // 3) Create user (password hash pre-save hook me ho raha hai User model me)
+    // 3) Create user
     const user = await User.create({ name, email, password });
 
     // 4) Generate JWT + cookie
@@ -54,12 +72,14 @@ exports.register = async (req, res) => {
     // Zod validation error
     if (error instanceof ZodError) {
       const issues = error.issues || error.errors || [];
-      const msg = issues.map((e) => e.message).join(", ");
-      logger.info("Register validation error: %s", msg);
+      const fieldErrors = zodIssuesToFieldErrors(issues);
+
+      logger.info("Register validation error: %o", fieldErrors);
 
       return res.status(400).json({
         success: false,
-        message: msg,
+        message: "Validation failed",
+        errors: fieldErrors,
       });
     }
 
@@ -87,6 +107,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "User does not exist",
+        errors: { email: "User does not exist" },
       });
     }
 
@@ -98,6 +119,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Incorrect password",
+        errors: { password: "Incorrect password" },
       });
     }
 
@@ -129,12 +151,14 @@ exports.login = async (req, res) => {
   } catch (error) {
     if (error instanceof ZodError) {
       const issues = error.issues || error.errors || [];
-      const msg = issues.map((e) => e.message).join(", ");
-      logger.info("Login validation error: %s", msg);
+      const fieldErrors = zodIssuesToFieldErrors(issues);
+
+      logger.info("Login validation error: %o", fieldErrors);
 
       return res.status(400).json({
         success: false,
-        message: msg,
+        message: "Validation failed",
+        errors: fieldErrors,
       });
     }
 
