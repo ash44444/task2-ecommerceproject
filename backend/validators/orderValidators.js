@@ -28,9 +28,9 @@ const orderItemSchema = z.object({
 });
 
 /**
- * FULL NAME – ecommerce style
+ * FULL NAME – alpha-numeric only
  * - 2–80 chars
- * - Letters + spaces + . , ' -
+ * - Letters + numbers + spaces
  * - At least 1 letter (pure numbers NOT allowed)
  * - Multiple spaces collapse to single
  */
@@ -41,10 +41,10 @@ const fullNameSchema = z
   })
   .trim()
   .min(2, "Full name must be at least 2 characters")
-  .max(80, "Full name must be at most 80 characters")
+  .max(40, "Full name must be at most 40 characters")
   .regex(
-    /^[A-Za-zÀ-ÖØ-öø-ÿ .,'\-]+$/,
-    "Full name can only contain letters, spaces, dots, commas, apostrophes and hyphens"
+    /^[A-Za-z0-9À-ÖØ-öø-ÿ ]+$/,
+    "Full name can only contain letters, numbers and spaces"
   )
   .refine((v) => /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(v), {
     message: "Full name must contain at least one letter",
@@ -94,10 +94,10 @@ const citySchema = z
   })
   .transform((v) => v.replace(/\s+/g, " "));
 
+
 /**
  * PINCODE – Indian ecommerce style
  * - Exactly 6 digits, not starting with 0
- * (agar generic chahiye to comment out regex and sirf min/max use kar sakte ho)
  */
 const pincodeSchema = z
   .string({
