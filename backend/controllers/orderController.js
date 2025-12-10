@@ -31,7 +31,6 @@ exports.checkout = async (req, res) => {
 
       const product = await Product.findById(productId);
       if (!product) {
-        // Simply skip invalid product ids
         logger.info("Checkout: product not found %s", productId);
         continue;
       }
@@ -70,7 +69,7 @@ exports.checkout = async (req, res) => {
       totalAmount
     );
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Order placed successfully",
       order,
@@ -79,19 +78,29 @@ exports.checkout = async (req, res) => {
     // 🔹 Zod validation error
     if (error instanceof ZodError) {
       const issues = error.issues || error.errors || [];
-      const msg = issues.map((e) => e.message).join(", ");
-      logger.info("Checkout validation error: %s", msg);
+
+      // 👉 field-wise errors bana rahe hain
+      const fieldErrors = {};
+      for (const issue of issues) {
+        // e.g. ["shipping", "fullName"] → "shipping.fullName"
+        const path = issue.path.join(".");
+        fieldErrors[path] = issue.message;
+      }
+
+      logger.info("Checkout validation error: %o", fieldErrors);
 
       return res.status(400).json({
         success: false,
-        message: msg,
+        message: "Validation failed",
+        errors: fieldErrors,   // 🔴 IMPORTANT
       });
     }
 
     logger.error("Checkout error: %s", error.message, {
       stack: error.stack,
     });
-    res.status(500).json({
+
+    return res.status(500).json({
       success: false,
       message: "Server error while placing order",
     });
