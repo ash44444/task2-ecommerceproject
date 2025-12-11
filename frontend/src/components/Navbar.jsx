@@ -1,6 +1,7 @@
 // src/components/Navbar.jsx
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { useState, useEffect, useRef } from "react";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -8,6 +9,27 @@ export default function Navbar() {
   const role = localStorage.getItem("userRole");
   const cartItems = useSelector((state) => state.cart.items);
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileMenuRef = useRef(null);
+
+  // close mobile menu on route change / outside click / escape
+  useEffect(() => {
+    const handleOutside = (e) => {
+      if (mobileOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
+        setMobileOpen(false);
+      }
+    };
+    const handleEsc = (e) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("click", handleOutside);
+    window.addEventListener("keydown", handleEsc);
+    return () => {
+      window.removeEventListener("click", handleOutside);
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, [mobileOpen]);
 
   // ---------------- LOGOUT ----------------
   const handleLogout = () => {
@@ -22,9 +44,20 @@ export default function Navbar() {
 
   const goToAuth = () => navigate("/auth");
 
+  // helper used by mobile menu links to close menu after navigation
+  const MobileLink = ({ to, children }) => (
+    <Link
+      to={to}
+      onClick={() => setMobileOpen(false)}
+      className="block px-4 py-2 text-base text-gray-700 hover:bg-gray-100 transition rounded-md"
+    >
+      {children}
+    </Link>
+  );
+
   return (
     <nav className="sticky top-0 z-30 bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3 sm:gap-4 flex-wrap">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3 sm:gap-4">
         {/* LEFT SECTION */}
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           {/* Logo + Brand */}
@@ -69,6 +102,7 @@ export default function Navbar() {
           <button
             onClick={() => navigate("/cart")}
             className="relative flex items-center gap-1 text-[11px] sm:text-sm bg-gray-100 px-2.5 sm:px-3 py-1.5 rounded-full hover:bg-gray-200 transition"
+            aria-label="Open cart"
           >
             <span className="material-symbols-outlined text-[16px] sm:text-[18px]">
               shopping_cart
@@ -88,29 +122,118 @@ export default function Navbar() {
             </span>
           </div>
 
-          {/* Login / Logout Button */}
-          {userName ? (
+          {/* Login / Logout Button (hidden on the smallest screens to save space) */}
+          <div className="hidden sm:block">
+            {userName ? (
+              <button
+                onClick={handleLogout}
+                className="text-[10px] sm:text-xs bg-red-600 text-white px-3 sm:px-4 py-1.5 rounded-full font-semibold shadow-sm hover:bg-red-700 transition"
+              >
+                Logout
+              </button>
+            ) : (
+              <button
+                onClick={goToAuth}
+                className="text-[10px] sm:text-xs bg-indigo-600 text-white px-3 sm:px-4 py-1.5 rounded-full font-semibold shadow-sm hover:bg-indigo-700 transition"
+              >
+                Login
+              </button>
+            )}
+          </div>
+
+          {/* HAMBURGER (visible only on small screens) */}
+          <div className="sm:hidden">
             <button
-              onClick={handleLogout}
-              className="text-[10px] sm:text-xs bg-red-600 text-white px-3 sm:px-4 py-1.5 rounded-full font-semibold shadow-sm hover:bg-red-700 transition"
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-menu"
+              onClick={() => setMobileOpen((s) => !s)}
+              className="p-2 rounded-md inline-flex items-center justify-center hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400"
             >
-              Logout
+              {mobileOpen ? (
+                // X icon
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                // Hamburger icon
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
             </button>
-          ) : (
-            <button
-              onClick={goToAuth}
-              className="text-[10px] sm:text-xs bg-indigo-600 text-white px-3 sm:px-4 py-1.5 rounded-full font-semibold shadow-sm hover:bg-indigo-700 transition"
-            >
-              Login
-            </button>
-          )}
+          </div>
         </div>
       </div>
+
+      {/* Mobile dropdown menu */}
+      {mobileOpen && (
+        <div
+          id="mobile-menu"
+          ref={mobileMenuRef}
+          className="sm:hidden px-3 pb-4"
+        >
+          <div className="bg-white border-t border-b border-gray-200 shadow-sm rounded-b-lg py-3">
+            <MobileLink to="/">Home</MobileLink>
+            <MobileLink to="/products">Products</MobileLink>
+            <MobileLink to="/about">About</MobileLink>
+            <MobileLink to="/contact">Contact</MobileLink>
+
+            {role === "admin" && (
+              <Link
+                to="/admin"
+                onClick={() => setMobileOpen(false)}
+                className="block px-4 py-2 text-base text-red-600 font-semibold rounded-md hover:bg-red-50 transition"
+              >
+                Admin
+              </Link>
+            )}
+
+            <div className="mt-2 px-3">
+              {/* On mobile show smaller login/logout and user info */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center font-semibold text-indigo-700">
+                    {userName ? userName.charAt(0).toUpperCase() : "G"}
+                  </div>
+                  <div className="text-sm text-gray-700">
+                    {userName ? `Hi, ${userName}` : "Guest user"}
+                  </div>
+                </div>
+
+                <div>
+                  {userName ? (
+                    <button
+                      onClick={() => {
+                        setMobileOpen(false);
+                        handleLogout();
+                      }}
+                      className="text-sm bg-red-600 text-white px-3 py-1 rounded-full font-semibold hover:bg-red-700 transition"
+                    >
+                      Logout
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setMobileOpen(false);
+                        goToAuth();
+                      }}
+                      className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-full font-semibold hover:bg-indigo-700 transition"
+                    >
+                      Login
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
 
-/* NavLink Component */
+/* NavLink Component (desktop) */
 function NavLink({ to, children }) {
   return (
     <Link
